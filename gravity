@@ -1,0 +1,287 @@
+// Gravity simulator by Olvine Dsouza. Find article at https://pancono.gamer.gd/ol.gravity.theory.index.html
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bidirectional Flux Field Simulator – Safe Orbit Entry</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  margin: 0;
+  background: #05070c;
+  overflow: hidden;
+  font-family: sans-serif;
+  color: #f1f5f9;
+}
+canvas { display: block; }
+
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(20,20,30,0.8);
+  padding: 12px;
+  border-radius: 8px;
+  z-index: 10;
+}
+#ui label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+#ui input { width: 180px; }
+</style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div id="ui">
+<label>STREAM COUNT: <span id="sCountLabel">36</span><br>
+<input type="range" id="STREAM_COUNT" min="250" max="800" value="143">
+</label>
+<label>ARROW SPACING: <span id="stepLabel">12</span><br>
+<input type="range" id="STREAM_STEP" min="23" max="200" value="12">
+</label>
+ <label>STREAM SPACING: <span id="sSpaceLabel">28</span><br>
+    <input type="range" id="STREAM_SPACING" min="120" max="200" value="28">
+  </label>
+
+<label>FIELD STRENGTH: <span id="fStrengthLabel">0.8</span><br>
+<input type="range" id="FIELD_STRENGTH" min="0.1" max="2" step="0.1" value="0.8">
+</label>
+
+<label>MASS INCREASE: <span id="pMassLabel">1</span><br>
+<input type="range" id="particle_mass" min="0.2" max="10000" step="0.1" value="1">
+</label>
+
+<label>MASS SPEED: <span id="pSpeedLabel">2.2</span><br>
+<input type="range" id="particle_speed" min="0.5" max="20" step="0.1" value="0.2">
+</label>
+</div>
+
+<script>
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+addEventListener("resize", resize);
+
+const cx = () => canvas.width / 2;
+const cy = () => canvas.height / 2;
+
+const FIELD_RADIUS = 260;
+const CORE_RADIUS = 18;
+
+// continuous stream density (no spacing)
+let STREAM_STEP = 12;
+
+// extended stream length beyond circle
+const STREAM_EXTEND = 400;
+
+let STREAM_COUNT = 36;
+let STREAM_SPACING = 28;
+let FIELD_STRENGTH = 0.8;
+
+// utils
+function length(x,y){return Math.hypot(x,y);}
+function dist(x1,y1,x2,y2){return Math.hypot(x2-x1,y2-y1);}
+
+function drawArrow(x,y,dx,dy){
+  const len = 10;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x+dx*len,y+dy*len);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(x+dx*len,y+dy*len);
+  ctx.lineTo(x+dx*len-dy*4,y+dy*len+dx*4);
+  ctx.lineTo(x+dx*len+dy*4,y+dy*len-dx*4);
+  ctx.fill();
+}
+
+// ---------- STREAM STORAGE ----------
+let streams = [];
+
+function buildStreams(){
+
+  streams = [];
+
+  for(let i=0;i<STREAM_COUNT;i++){
+
+    const a = i/STREAM_COUNT*Math.PI*2;
+
+    const dx = Math.cos(a);
+    const dy = Math.sin(a);
+
+    const px = -dy;
+    const py = dx;
+
+    // two parallel bidirectional stream lines (NOW uses spacing slider)
+    [STREAM_SPACING, -STREAM_SPACING].forEach(offset=>{
+
+      for(let r=-FIELD_RADIUS-STREAM_EXTEND;
+              r<=FIELD_RADIUS+STREAM_EXTEND;
+              r+=STREAM_STEP){
+
+        const x = cx()+dx*r+px*offset;
+        const y = cy()+dy*r+py*offset;
+
+        streams.push({x,y,dx,dy});
+
+      }
+
+    });
+
+  }
+
+}
+
+// ---------- SPAWN PARTICLE ON REAL STREAM ----------
+function spawnParticleOnStream(){
+
+  buildStreams();
+
+  // choose only streams outside circle
+  const outside = streams.filter(s =>
+    length(s.x-cx(), s.y-cy()) > FIELD_RADIUS+20
+  );
+
+  const s = outside[Math.floor(Math.random()*outside.length)];
+
+  const speed = parseFloat(
+    document.getElementById("particle_speed").value
+  );
+
+  return {
+    x:s.x,
+    y:s.y,
+    vx:-s.dx*speed, // inward flow
+    vy:-s.dy*speed,
+    mass:1
+  };
+}
+
+let particle = spawnParticleOnStream();
+
+// ---------- MAIN LOOP ----------
+function update(){
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // boundary
+  ctx.strokeStyle="#334155";
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.arc(cx(),cy(),FIELD_RADIUS,0,Math.PI*2);
+  ctx.stroke();
+
+  // core
+  ctx.fillStyle="#000";
+  ctx.beginPath();
+  ctx.arc(cx(),cy(),CORE_RADIUS,0,Math.PI*2);
+  ctx.fill();
+
+  buildStreams();
+
+  ctx.strokeStyle="#94a3b8";
+  ctx.fillStyle="#94a3b8";
+  ctx.lineWidth=1;
+
+  // draw streams
+  streams.forEach(s=>{
+
+    drawArrow(s.x,s.y,s.dx,s.dy);
+    drawArrow(s.x,s.y,-s.dx,-s.dy);
+
+  });
+
+
+// ---------- SOFT STREAM CAPTURE (ALLOWS DRIFT & SWITCHING) ----------
+let nearest=null;
+let minDist=Infinity;
+
+streams.forEach(s=>{
+  const d=dist(particle.x,particle.y,s.x,s.y);
+  if(d<minDist){
+    minDist=d;
+    nearest=s;
+  }
+});
+
+if(nearest && minDist < 40){
+
+  const influence = FIELD_STRENGTH * 0.08;
+
+  const targetVx = -nearest.dx;
+  const targetVy = -nearest.dy;
+
+  particle.vx += (targetVx - particle.vx) * influence;
+  particle.vy += (targetVy - particle.vy) * influence;
+}
+
+// maintain controlled speed
+const desiredSpeed = parseFloat(
+  document.getElementById("particle_speed").value
+);
+
+const vLen = Math.hypot(particle.vx, particle.vy) || 1;
+
+particle.vx = (particle.vx / vLen) * desiredSpeed;
+particle.vy = (particle.vy / vLen) * desiredSpeed;
+
+
+
+  particle.x+=particle.vx;
+  particle.y+=particle.vy;
+
+  // draw particle
+  ctx.fillStyle="#facc15";
+  ctx.beginPath();
+  ctx.arc(particle.x,particle.y,6,0,Math.PI*2);
+  ctx.fill();
+
+  requestAnimationFrame(update);
+
+}
+
+update();
+
+// ---------- UI ----------
+function bind(id,cb,label){
+
+  const s=document.getElementById(id);
+  const l=document.getElementById(label);
+
+  s.oninput=()=>{
+    l.textContent=s.value;
+    cb(parseFloat(s.value));
+  };
+}
+
+bind("STREAM_COUNT",v=>STREAM_COUNT=v,"sCountLabel");
+bind("STREAM_SPACING", v => STREAM_SPACING = v, "sSpaceLabel");
+bind("STREAM_STEP", v => STREAM_STEP = v, "stepLabel");
+
+bind("FIELD_STRENGTH",v=>FIELD_STRENGTH=v,"fStrengthLabel");
+
+bind("particle_mass",v=>particle.mass=v,"pMassLabel");
+
+bind("particle_speed",v=>{
+document.getElementById("pSpeedLabel").textContent=v;
+});
+
+</script>
+    
+    
+
+
+</body>
+    <p> aa</p>
+       
+</html>
