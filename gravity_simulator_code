@@ -1,7 +1,8 @@
 // Gravity Simulator v1.0
 // Directional Energy Flux Field Model
 // Concept & Implementation by: Olvine Dsouza (2026)
-// https://pancono.gamer.gd/ol.gravity.theory.index.html
+// Paper: https://pancono.gamer.gd/ol.gravity.theory.index.html
+// How to use: https://youtu.be/AJy1IJrqYTw?si=Ds_IICjHSmWJn1PM
 
 <html lang="en">
 <head>
