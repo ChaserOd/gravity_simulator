@@ -9,11 +9,11 @@ https://youtu.be/PZU7Mh622HE
 
 Simulator 1 need adjustment:
 Adjustment need to be done at simulator to get the effect:
-Stream Count: 250
-Arrow spacing: 23
-Stream spacing: 120
-Field strength: 1.1
-Increase mass: 1
+Stream Count: 250,
+Arrow spacing: 23,
+Stream spacing: 120,
+Field strength: 1.1,
+Increase mass: 1,
 Mass speed:2.2 or little more.
 
 Simulator 2 doesn't need adjustment.
