@@ -4,6 +4,7 @@ Details and how simulator works: https://medium.com/@carebfresh/new-gravity-theo
 The given code is used at simulator.
 
 https://youtu.be/xKE4ywilu7E
+
 https://youtu.be/PZU7Mh622HE
 
 Simulator 1 need adjustment:
