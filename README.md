@@ -3,6 +3,9 @@ New Gravity Theory: Emergent Orbital Motion in a Bidirectional Flux Field( Gravi
 Details and how simulator works: https://medium.com/@carebfresh/new-gravity-theory-emergent-orbital-motion-in-a-bidirectional-flux-field-gravity-simulator-188e4952e13d
 The given code is used at simulator.
 
+https://youtu.be/xKE4ywilu7E
+https://youtu.be/PZU7Mh622HE
+
 Simulator 1 need adjustment:
 Adjustment need to be done at simulator to get the effect:
 Stream Count: 250
